@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "dotnet-inspector": {
+      "type": "local",
+      "enabled": true,
+      "command": [
+        "dotnet",
+        "<PATH_TO>/DotNetInspectorMcp.dll"
+      ]
+    }
+  }
+}

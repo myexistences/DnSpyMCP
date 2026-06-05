@@ -3,7 +3,7 @@
     "dotnet-inspector": {
       "command": "dotnet",
       "args": [
-        "<PATH_TO>/DotNetInspectorMcp.dll"
+        "<PATH_TO>/DnSpyMCP.dll"
       ]
     }
   }

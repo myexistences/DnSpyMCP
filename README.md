@@ -129,7 +129,7 @@ dotnet run --project src/DotNetInspectorMcp/DotNetInspectorMcp.csproj -c Release
     "dnspy-mcp": {
       "command": "dotnet",
       "args": [
-        "<PATH_TO>/DotNetInspectorMcp.dll"
+        "<PATH_TO>/DnSpyMCP.dll"
       ]
     }
   }
@@ -149,7 +149,7 @@ Config file: `%USERPROFILE%\.config\opencode\opencode.json`
       "enabled": true,
       "command": [
         "dotnet",
-        "<PATH_TO>/DotNetInspectorMcp.dll"
+        "<PATH_TO>/DnSpyMCP.dll"
       ]
     }
   }
@@ -162,7 +162,7 @@ Config file: `%USERPROFILE%\.config\opencode\opencode.json`
 {
   "mcpServers": {
     "dnspy-mcp": {
-      "command": "<PATH_TO>/DnSpyMCPx64.exe",
+      "command": "<PATH_TO>/DnSpyMCP-win-x64.exe",
       "args": []
     }
   }

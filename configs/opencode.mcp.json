@@ -6,7 +6,7 @@
       "enabled": true,
       "command": [
         "dotnet",
-        "<PATH_TO>/DotNetInspectorMcp.dll"
+        "<PATH_TO>/DnSpyMCP.dll"
       ]
     }
   }

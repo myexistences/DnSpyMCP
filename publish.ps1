@@ -5,5 +5,6 @@ param(
 
 $project = "src/DotNetInspectorMcp/DotNetInspectorMcp.csproj"
 $profile = if ($Runtime -eq 'win-x64') { 'win-x64' } else { 'linux-x64' }
+$assemblyName = if ($Runtime -eq 'win-x64') { 'DnSpyMCPx64' } else { 'DnSpyMCPx64-linux' }
 
-dotnet publish $project -c Release -p:PublishProfile=$profile
+dotnet publish $project -c Release -p:PublishProfile=$profile -p:AssemblyName=$assemblyName

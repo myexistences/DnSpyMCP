@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔬 DotNetInspector MCP Server
+# 🔬 DnSpy MCP Server
 
 [![GitHub stars](https://img.shields.io/github/stars/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=gold)](https://github.com/myexistences/DnSpyMCP/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=blue)](https://github.com/myexistences/DnSpyMCP/network/members)
@@ -126,7 +126,7 @@ dotnet run --project src/DotNetInspectorMcp/DotNetInspectorMcp.csproj -c Release
 ```json
 {
   "mcpServers": {
-    "dotnet-inspector": {
+    "dnspy-mcp": {
       "command": "dotnet",
       "args": [
         "<PATH_TO>/DotNetInspectorMcp.dll"
@@ -144,7 +144,7 @@ Config file: `%USERPROFILE%\.config\opencode\opencode.json`
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "dotnet-inspector": {
+    "dnspy-mcp": {
       "type": "local",
       "enabled": true,
       "command": [
@@ -161,8 +161,8 @@ Config file: `%USERPROFILE%\.config\opencode\opencode.json`
 ```json
 {
   "mcpServers": {
-    "dotnet-inspector": {
-      "command": "<PATH_TO>/DotNetInspectorMcp.exe",
+    "dnspy-mcp": {
+      "command": "<PATH_TO>/DnSpyMCPx64.exe",
       "args": []
     }
   }

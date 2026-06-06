@@ -11,4 +11,5 @@ internal sealed class McpToolAttribute(string name, string description) : Attrib
 internal sealed class ToolParamAttribute(string description) : Attribute
 {
     public string Description { get; } = description;
+    public bool Required { get; init; }
 }

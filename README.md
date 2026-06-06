@@ -8,11 +8,11 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=green)](https://github.com/myexistences/DnSpyMCP/commits)
 [![GitHub license](https://img.shields.io/github/license/myexistences/DnSpyMCP?style=for-the-badge&color=purple)](https://github.com/myexistences/DnSpyMCP/blob/main/LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
-[![Version](https://img.shields.io/badge/version-2.0.0-orange?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-orange?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/releases)
 
 **A powerful MCP server for .NET reverse engineering, game hacking, and Il2Cpp dump analysis.**
 
-*19 AI-optimized tools • Cross-References • Network Reversing • Il2Cpp Support • TCP Proxy Analysis*
+*22 AI-optimized tools • Cross-References • Network Reversing • Il2Cpp Support • TCP Proxy Analysis • Multi-DLL Search*
 
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=myexistences%2FDnSpyMCP&countColor=%23263759&style=for-the-badge)](https://visitorbadge.io/status?path=myexistences%2FDnSpyMCP)
 
@@ -22,14 +22,19 @@
 
 ## Features
 
-- **19 MCP Tools** for deep .NET assembly analysis, patching, and game reversing
+- **22 MCP Tools** for deep .NET assembly analysis, patching, and game reversing
 - Fully async, non-blocking architecture
 - Il2Cpp / Unity game dump optimized (offset search, RVA lookup, dummy detection)
 - Cross-reference scanning (method callers, field references)
 - Network/TCP proxy reverse engineering (packet handler discovery, crypto usage scanning)
 - Hardcoded secret extraction (IPs, URLs, API keys)
+- **Multi-assembly search** — search all DLLs in a folder at once
+- **dump.cs bridge** — resolve dump.cs line numbers to DummyDll types
+- **C-struct layout export** — ready for cheat engine / Frida scripts
+- **Default assembly auto-discovery** — `DNSPY_DEFAULT_ASSEMBLY` env var support
+- **AI agent instructions** — `instructions.md` for AI agent onboarding
 - Single-file publish (win-x64 / linux-x64)
-- MCP stdio transport (Claude Code / Codex / Cursor / OpenCode compatible)
+- MCP stdio transport (Claude Code / Codex / Cursor / OpenCode / Antigravity compatible)
 
 ## Project Layout
 
@@ -48,7 +53,7 @@ src/DotNetInspectorMcp/
 └── Endpoints/ToolContext.cs            # DI context for tools
 ```
 
-## Tools (19 total)
+## Tools (22 total)
 
 ### Assembly Inspection
 | Tool | Description |
@@ -65,8 +70,9 @@ src/DotNetInspectorMcp/
 | Tool | Description |
 |------|-------------|
 | `analyze_type` | Full class layout: fields with offsets, properties, methods with RVAs. |
+| `get_type_layout` | C-struct-style memory layout, ready for cheat engine or Frida scripts. |
 | `get_method_rva` | Get the Il2Cpp RVA for a specific method. |
-| `search_by_offset` | Search by hex (`0x16D0`) or decimal offset to find fields/methods. |
+| `search_by_offset` | Search by hex (`0x16D0`) or decimal offset to find fields/methods. Numeric comparison. |
 
 ### Deep Reverse Engineering
 | Tool | Description |
@@ -83,6 +89,12 @@ src/DotNetInspectorMcp/
 | `find_crypto_usage` | Heuristic scan for AES/RSA/Encrypt/Decrypt methods. |
 | `scan_secrets` | Extract hardcoded IPs, URLs, WebSocket endpoints, and API keys. |
 
+### Multi-Assembly & Dump Bridge
+| Tool | Description |
+|------|-------------|
+| `search_workspace` | Search ALL .dll files in a directory for matching types/members. |
+| `resolve_dump_line` | Bridge dump.cs line numbers to DummyDll types with full analysis. |
+
 ### Patching
 | Tool | Description |
 |------|-------------|
@@ -93,6 +105,20 @@ src/DotNetInspectorMcp/
 | Tool | Description |
 |------|-------------|
 | `format_inspector_jump` | Build step-by-step navigation from metadata tokens. |
+
+## Default Assembly Path
+
+You can avoid repeating `assemblyPath` on every tool call by setting:
+
+```bash
+# Environment variable
+set DNSPY_DEFAULT_ASSEMBLY=C:\path\to\DummyDll\Assembly-CSharp.dll
+```
+
+The server also auto-discovers assemblies in common locations relative to CWD:
+- `DummyDll/Assembly-CSharp.dll`
+- `Dump/DummyDll/Assembly-CSharp.dll`
+- `Managed/Assembly-CSharp.dll`
 
 ## Resources
 
@@ -171,12 +197,21 @@ Config file: `%USERPROFILE%\.config\opencode\opencode.json`
 
 > Replace `<PATH_TO>` with the actual path to your built DLL or published EXE.
 
+### AI Agent Instructions
+
+Copy `configs/instructions.md` to your MCP server's tool directory so AI agents automatically get usage guidance:
+```bash
+# Antigravity example:
+copy configs\instructions.md %USERPROFILE%\.gemini\antigravity-ide\mcp\dnspy\instructions.md
+```
+
 ## Quick Start
 
 1. Build or publish
 2. Add config to your MCP client (see above)
-3. Restart your MCP client
-4. Ask the AI to call `list_types` with your target assembly path
+3. Copy `configs/instructions.md` to your MCP tool directory
+4. Restart your MCP client
+5. Ask the AI to call `list_types` with your target assembly path
 
 ## Example Workflows
 
@@ -200,6 +235,20 @@ Config file: `%USERPROFILE%\.config\opencode\opencode.json`
 ```
 1. list_types (gameCodeOnly=true) → see only game scripts
 2. analyze_type → get full memory layout with offsets
-3. search_by_offset 0x16D0 → find what field is at that offset
-4. find_method_callers → trace who calls a specific function
+3. get_type_layout → export as C struct for cheat engine
+4. search_by_offset 0x16D0 → find what field is at that offset
+5. find_method_callers → trace who calls a specific function
+```
+
+### Multi-DLL Discovery
+```
+1. search_workspace → search all DLLs in DummyDll folder
+2. analyze_type → deep dive into the matching type
+3. find_field_references → cross-reference analysis
+```
+
+### Bridge dump.cs to DummyDll
+```
+1. resolve_dump_line → resolve a dump.cs line to a type/member
+2. analyze_type → get the full analysis from DummyDll
 ```

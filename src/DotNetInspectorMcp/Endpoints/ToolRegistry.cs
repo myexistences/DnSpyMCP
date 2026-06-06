@@ -122,6 +122,8 @@ internal sealed class ToolRegistry
 
             if (!parameter.HasDefaultValue && !IsNullable(parameter.ParameterType))
                 required.Add(parameter.Name!);
+            else if (parameter.GetCustomAttribute<ToolParamAttribute>() is { Required: true })
+                required.Add(parameter.Name!);
         }
 
         return new

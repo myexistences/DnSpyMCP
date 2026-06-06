@@ -1,4 +1,4 @@
-# AGENT.md — DotNetInspector MCP Server v2.0.0
+# AGENT.md — DnSpy MCP Server v2.1.0
 
 This document explains **every major aspect** of this MCP server so another agent (or human) can operate, extend, and troubleshoot it safely.
 
@@ -6,16 +6,18 @@ This document explains **every major aspect** of this MCP server so another agen
 
 ## 1) Purpose
 
-`DotNetInspector-mcp` is a local MCP (Model Context Protocol) server for .NET reverse engineering, game hacking, and network analysis.
+`DnSpyMCP` is a local MCP (Model Context Protocol) server for .NET reverse engineering, game hacking, and network analysis.
 
-It provides 19 tools to:
+It provides 22 tools to:
 - inspect assemblies (`list_types`, `list_methods`, `search_members`, `analyze_type`)
 - decompile code (`decompile_type`, `decompile_method`)
 - inspect IL (`get_method_il`, `find_string_references`)
-- game dump analysis (`search_by_offset`, `get_method_rva`, Il2Cpp dummy detection)
+- game dump analysis (`search_by_offset`, `get_method_rva`, `get_type_layout`, Il2Cpp dummy detection)
 - cross-references (`find_method_callers`, `find_field_references`, `find_derived_types`)
 - token resolution (`lookup_token`)
 - network reversing (`find_network_handlers`, `find_crypto_usage`, `scan_secrets`)
+- multi-assembly search (`search_workspace`)
+- dump.cs bridge (`resolve_dump_line`)
 - generate navigation instructions (`format_inspector_jump`)
 - patch binaries (`patch_replace_string_literal`, `patch_nop_instructions`)
 
@@ -56,7 +58,7 @@ src/DotNetInspectorMcp/
 ├── Communication/StdioJsonRpc.cs    — stdio read/write + framing, IDisposable
 ├── Domain/AssemblyAnalyzer.cs       — core analysis engine, IDisposable
 ├── Domain/ResourceRegistry.cs       — MCP resources
-├── Endpoints/AssemblyTools.cs       — all 19 tool implementations
+├── Endpoints/AssemblyTools.cs       — all 22 tool implementations
 ├── Endpoints/ToolRegistry.cs        — reflection-based tool discovery
 ├── Endpoints/Attributes.cs          — [McpTool] and [ToolParam] attributes
 ├── Endpoints/ToolCallResult.cs      — tool result model
@@ -70,16 +72,29 @@ src/DotNetInspectorMcp/
 Tools are discovered via reflection:
 - Static methods in `Endpoints/AssemblyTools.cs`
 - Marked with `[McpTool(name, description)]`
-- Parameters described with `[ToolParam(description)]`
+- Parameters described with `[ToolParam(description, Required = true/false)]`
 
 `ToolRegistry` generates MCP JSON schema from C# method signatures.
+Parameters with `Required = true` are always included in the JSON schema `required` array.
 
 First parameter of every tool must be `ToolContext`.
 Methods can return `ToolCallResult` (sync) or `Task<ToolCallResult>` (async).
 
 ---
 
-## 5) Tool reference (19 tools)
+## 5) Error handling & null guards
+
+All tool handlers validate required parameters **before** calling into the analyzer.
+If `assemblyPath` (or any required param) is null/empty, the tool returns a friendly
+`ToolCallResult` with an actionable error message instead of throwing an exception.
+
+Default assembly path auto-discovery:
+1. Checks `DNSPY_DEFAULT_ASSEMBLY` environment variable
+2. Scans CWD for `DummyDll/Assembly-CSharp.dll`, `Managed/Assembly-CSharp.dll`, etc.
+
+---
+
+## 6) Tool reference (22 tools)
 
 ### Assembly Inspection
 1. `list_types` — list types with optional `gameCodeOnly` filter
@@ -92,30 +107,35 @@ Methods can return `ToolCallResult` (sync) or `Task<ToolCallResult>` (async).
 
 ### Game Dump / Il2Cpp
 8. `analyze_type` — full class layout (fields + offsets + properties + methods + RVAs)
-9. `get_method_rva` — Il2Cpp RVA for a method
-10. `search_by_offset` — find field/method by hex or decimal offset
+9. `get_type_layout` — C-struct layout for cheat development
+10. `get_method_rva` — Il2Cpp RVA for a method
+11. `search_by_offset` — find field/method by hex or decimal offset (numeric comparison)
 
 ### Cross-References
-11. `find_method_callers` — who calls a target method
-12. `find_field_references` — who reads/writes a target field
-13. `find_derived_types` — inheritance tree scan
-14. `lookup_token` — resolve raw hex token to Type/Method/Field/Property
+12. `find_method_callers` — who calls a target method
+13. `find_field_references` — who reads/writes a target field
+14. `find_derived_types` — inheritance tree scan
+15. `lookup_token` — resolve raw hex token to Type/Method/Field/Property
 
 ### Network Reversing
-15. `find_network_handlers` — heuristic scan for TCP/Socket/Packet logic
-16. `find_crypto_usage` — heuristic scan for AES/RSA/encryption
-17. `scan_secrets` — extract hardcoded IPs, URLs, API keys
+16. `find_network_handlers` — heuristic scan for TCP/Socket/Packet logic
+17. `find_crypto_usage` — heuristic scan for AES/RSA/encryption
+18. `scan_secrets` — extract hardcoded IPs, URLs, API keys
+
+### Multi-Assembly & Bridge
+19. `search_workspace` — search ALL .dll files in a directory
+20. `resolve_dump_line` — bridge dump.cs line numbers to DummyDll types
 
 ### Patching
-18. `patch_replace_string_literal` — replace string at IL offset (backup first)
-19. `patch_nop_instructions` — NOP instructions at IL offset (backup first)
+21. `patch_replace_string_literal` — replace string at IL offset (backup first)
+22. `patch_nop_instructions` — NOP instructions at IL offset (backup first)
 
 ### Navigation
 - `format_inspector_jump` — build navigation steps from tokens
 
 ---
 
-## 6) Resources
+## 7) Resources
 
 `resources/list` returns:
 - `inspector://assemblies`
@@ -130,7 +150,7 @@ Cache is populated when tools load assemblies by `assemblyPath`.
 
 ---
 
-## 7) Lifecycle & disposal
+## 8) Lifecycle & disposal
 
 - `Program.cs` registers `Console.CancelKeyPress` and `AppDomain.ProcessExit`
 - On shutdown, `McpServerHost.Dispose()` is called
@@ -139,13 +159,14 @@ Cache is populated when tools load assemblies by `assemblyPath`.
 
 ---
 
-## 8) Typical agent workflows
+## 9) Typical agent workflows
 
 ### A) Il2Cpp game field analysis
 1. `list_types` with `gameCodeOnly=true`
 2. `analyze_type` for full memory layout
-3. `search_by_offset` to find what's at `0x16D0`
-4. `find_field_references` to trace who modifies it
+3. `get_type_layout` for C-struct export
+4. `search_by_offset` to find what's at `0x16D0`
+5. `find_field_references` to trace who modifies it
 
 ### B) TCP Proxy / Packet hooking
 1. `find_network_handlers` to locate Send/Receive
@@ -153,14 +174,23 @@ Cache is populated when tools load assemblies by `assemblyPath`.
 3. `scan_secrets` to extract server IPs/endpoints
 4. `get_method_rva` for Frida hook targets
 
-### C) Patch popup text
+### C) Multi-DLL discovery
+1. `search_workspace` to find which DLL contains a type
+2. `analyze_type` to deep dive into the matching type
+3. `find_field_references` / `find_method_callers` for cross-references
+
+### D) Patch popup text
 1. `find_string_references` with literal fragment
 2. `patch_replace_string_literal` with new text
 3. Verify by re-running `find_string_references` on patched file
 
+### E) Bridge dump.cs
+1. `resolve_dump_line` with dump.cs path and line number
+2. Optionally provide `assemblyPath` for full DummyDll cross-reference
+
 ---
 
-## 9) Build, run, publish
+## 10) Build, run, publish
 
 Build: `dotnet build src/DotNetInspectorMcp/DotNetInspectorMcp.csproj -c Release`
 Run: `dotnet run --project src/DotNetInspectorMcp/DotNetInspectorMcp.csproj -c Release`
@@ -168,19 +198,23 @@ Publish: `./publish.ps1 -Runtime win-x64` or `./publish.ps1 -Runtime linux-x64`
 
 ---
 
-## 10) Known caveats
+## 11) Known caveats
 
 - Patching can break signatures/strong-name expectations in some apps.
 - NOP patching can break control flow if applied blindly.
 - Always validate patched binaries in isolated test environments.
 - Heuristic network/crypto scanners may have false positives on large assemblies.
+- Il2Cpp DummyDlls have no real method bodies — decompilation shows stubs.
+- `resolve_dump_line` uses regex-based parsing; may not handle all dump.cs formatting edge cases.
 
 ---
 
-## 11) Extension guidance
+## 12) Extension guidance
 
 When adding tools:
 1. Add async method in `Domain/AssemblyAnalyzer.cs`
 2. Add `[McpTool]` endpoint in `Endpoints/AssemblyTools.cs`
-3. Ensure token-rich output (TypeDef, MethodDef, RVA, etc.)
-4. Update this AGENT.md + README.md
+3. Mark required parameters with `[ToolParam(description, Required = true)]`
+4. Add null guards with `ValidateRequired()` before calling the analyzer
+5. Ensure token-rich output (TypeDef, MethodDef, RVA, etc.)
+6. Update this AGENT.md + README.md + configs/instructions.md

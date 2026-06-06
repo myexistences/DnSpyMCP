@@ -121,8 +121,8 @@ internal sealed class McpServer(StdioJsonRpc rpc, ToolRegistry tools, ToolContex
             },
             serverInfo = new
             {
-                name = "dotnet-inspector-mcp",
-                version = "2.0.0"
+                name = "dnspy-mcp",
+                version = "2.1.0"
             }
         };
     }

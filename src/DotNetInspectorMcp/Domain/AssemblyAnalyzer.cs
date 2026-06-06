@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using System.Text.RegularExpressions;
 using dnlib.DotNet;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
@@ -11,8 +12,56 @@ namespace DotNetInspectorMcp.Domain;
 internal sealed class AssemblyAnalyzer : IDisposable
 {
     private readonly ConcurrentDictionary<string, Lazy<LoadedAssembly>> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private string? _defaultAssemblyPath;
+    private bool _defaultAssemblyChecked;
 
     public IReadOnlyList<string> GetCachedAssemblyPaths() => _cache.Keys.OrderBy(x => x).ToArray();
+
+    /// <summary>
+    /// Auto-discovered default assembly path.
+    /// Checks DNSPY_DEFAULT_ASSEMBLY env var first, then scans CWD for common DummyDll locations.
+    /// </summary>
+    public string? DefaultAssemblyPath
+    {
+        get
+        {
+            if (_defaultAssemblyChecked)
+                return _defaultAssemblyPath;
+
+            _defaultAssemblyChecked = true;
+
+            // 1. Check environment variable
+            var envPath = Environment.GetEnvironmentVariable("DNSPY_DEFAULT_ASSEMBLY");
+            if (!string.IsNullOrWhiteSpace(envPath) && File.Exists(envPath))
+            {
+                _defaultAssemblyPath = Path.GetFullPath(envPath);
+                return _defaultAssemblyPath;
+            }
+
+            // 2. Auto-discover common locations from CWD
+            var cwd = Environment.CurrentDirectory;
+            var candidates = new[]
+            {
+                "DummyDll/Assembly-CSharp.dll",
+                "Dump/DummyDll/Assembly-CSharp.dll",
+                "Il2CppDumper/DummyDll/Assembly-CSharp.dll",
+                "Managed/Assembly-CSharp.dll",
+                "Assembly-CSharp.dll"
+            };
+
+            foreach (var candidate in candidates)
+            {
+                var fullPath = Path.Combine(cwd, candidate);
+                if (File.Exists(fullPath))
+                {
+                    _defaultAssemblyPath = Path.GetFullPath(fullPath);
+                    return _defaultAssemblyPath;
+                }
+            }
+
+            return null;
+        }
+    }
 
     public Task<string> GetAssemblySummaryAsync(string assemblyPath) => Task.Run(() =>
     {
@@ -151,15 +200,16 @@ internal sealed class AssemblyAnalyzer : IDisposable
     {
         var module = GetOrLoad(assemblyPath).Module;
         
-        string hexTarget;
-        if (offsetQuery.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            hexTarget = offsetQuery.ToUpperInvariant();
-        else if (uint.TryParse(offsetQuery, out var parsedDecimal))
-            hexTarget = $"0X{parsedDecimal:X}";
-        else if (uint.TryParse(offsetQuery, System.Globalization.NumberStyles.HexNumber, null, out var parsedHex))
-            hexTarget = $"0X{parsedHex:X}";
-        else
-            return "Invalid offset query format. Use decimal (e.g. 5840) or hex (e.g. 0x16D0).";
+        // Parse the query into a numeric value for reliable matching
+        var targetValue = TryParseHexValue(offsetQuery);
+        if (targetValue == null)
+        {
+            // Try parsing as decimal
+            if (ulong.TryParse(offsetQuery, out var decVal))
+                targetValue = decVal;
+            else
+                return "Invalid offset query format. Use decimal (e.g. 5840) or hex (e.g. 0x16D0).";
+        }
             
         var results = new List<string>();
         
@@ -168,7 +218,8 @@ internal sealed class AssemblyAnalyzer : IDisposable
             foreach (var field in type.Fields)
             {
                 var offset = GetFieldOffset(field);
-                if (offset != null && offset.ToUpperInvariant() == hexTarget)
+                var fieldValue = TryParseHexValue(offset);
+                if (fieldValue != null && fieldValue == targetValue)
                 {
                     var access = field.IsPublic ? "public" : field.IsPrivate ? "private" : field.IsFamily ? "protected" : field.IsAssembly ? "internal" : "private";
                     results.Add($"{access} {field.FieldType.FullName} {field.Name}; // {offset} | Type={type.FullName}");
@@ -178,7 +229,8 @@ internal sealed class AssemblyAnalyzer : IDisposable
             foreach (var method in type.Methods)
             {
                 var rva = GetMethodAddressRva(method);
-                if (rva != null && rva.ToUpperInvariant() == hexTarget)
+                var rvaValue = TryParseHexValue(rva);
+                if (rvaValue != null && rvaValue == targetValue)
                 {
                     var access = method.IsPublic ? "public" : method.IsPrivate ? "private" : method.IsFamily ? "protected" : method.IsAssembly ? "internal" : "private";
                     var retType = method.ReturnType.FullName;
@@ -188,7 +240,7 @@ internal sealed class AssemblyAnalyzer : IDisposable
             }
         }
         
-        return results.Count == 0 ? "No matches found for offset " + hexTarget : string.Join(Environment.NewLine, results);
+        return results.Count == 0 ? "No matches found for offset 0x" + targetValue?.ToString("X") : string.Join(Environment.NewLine, results);
     });
 
     public Task<string> DecompileTypeAsync(string assemblyPath, string typeFullName) => Task.Run(() =>
@@ -216,7 +268,7 @@ internal sealed class AssemblyAnalyzer : IDisposable
                           (method.Body.Instructions.Count <= 3 && method.Body.Instructions.Any(i => i.OpCode.Code == dnlib.DotNet.Emit.Code.Newobj && i.Operand?.ToString()?.Contains("NotImplementedException") == true));
             if (isDummy)
             {
-                code += $"\n\n// [DotNetInspector Warning]: This appears to be an Il2Cpp dummy dump. There is no IL code here.\n// If you want to modify this behavior, you must patch GameAssembly.dll at RVA {rva}";
+                code += $"\n\n// [DnSpyMCP Warning]: This appears to be an Il2Cpp dummy dump. There is no IL code here.\n// If you want to modify this behavior, you must patch GameAssembly.dll at RVA {rva}";
             }
         }
 
@@ -669,9 +721,9 @@ internal sealed class AssemblyAnalyzer : IDisposable
         var module = GetOrLoad(assemblyPath).Module;
         var results = new List<string>();
         
-        var ipRegex = new System.Text.RegularExpressions.Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
-        var urlRegex = new System.Text.RegularExpressions.Regex(@"https?://[\w\-._~:/?#[\]@!$&'()*+,;=]+");
-        var wsRegex = new System.Text.RegularExpressions.Regex(@"wss?://[\w\-._~:/?#[\]@!$&'()*+,;=]+");
+        var ipRegex = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
+        var urlRegex = new Regex(@"https?://[\w\-._~:/?#[\]@!$&'()*+,;=]+");
+        var wsRegex = new Regex(@"wss?://[\w\-._~:/?#[\]@!$&'()*+,;=]+");
         
         foreach (var type in module.GetTypes().Where(t => !t.IsGlobalModuleType))
         {
@@ -700,6 +752,257 @@ internal sealed class AssemblyAnalyzer : IDisposable
         return results.Count == 0 ? "No secrets found." : string.Join(Environment.NewLine, results);
     });
 
+    // ── Multi-Assembly Search ─────────────────────────────────────────────
+
+    public Task<string> SearchWorkspaceAsync(string directoryPath, string query, int maxResultsPerDll, bool recursive) => Task.Run(() =>
+    {
+        var normalizedDir = Path.GetFullPath(directoryPath);
+        if (!Directory.Exists(normalizedDir))
+            throw new DirectoryNotFoundException($"Directory not found: {normalizedDir}");
+
+        var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+        var dllFiles = Directory.GetFiles(normalizedDir, "*.dll", searchOption);
+
+        if (dllFiles.Length == 0)
+            return $"No .dll files found in {normalizedDir}";
+
+        var allResults = new List<string>();
+        var errors = new List<string>();
+
+        foreach (var dllPath in dllFiles.OrderBy(f => f))
+        {
+            try
+            {
+                var result = SearchMembersAsync(dllPath, query, maxResultsPerDll).GetAwaiter().GetResult();
+                if (result != "No matches found.")
+                {
+                    var dllName = Path.GetFileName(dllPath);
+                    allResults.Add($"--- {dllName} ---");
+                    allResults.Add(result);
+                    allResults.Add("");
+                }
+            }
+            catch
+            {
+                errors.Add($"[Skipped] {Path.GetFileName(dllPath)} (not a valid .NET assembly)");
+            }
+        }
+
+        if (allResults.Count == 0)
+        {
+            var msg = $"No matches found for \"{query}\" across {dllFiles.Length} DLLs in {normalizedDir}";
+            if (errors.Count > 0)
+                msg += "\n" + string.Join("\n", errors);
+            return msg;
+        }
+
+        var summary = $"Search results for \"{query}\" across {dllFiles.Length} DLLs:\n\n";
+        return summary + string.Join(Environment.NewLine, allResults);
+    });
+
+    // ── Dump.cs Bridge ────────────────────────────────────────────────────
+
+    public Task<string> ResolveDumpLineAsync(string dumpCsPath, int lineNumber, string? assemblyPath) => Task.Run(() =>
+    {
+        var normalizedPath = Path.GetFullPath(dumpCsPath);
+        if (!File.Exists(normalizedPath))
+            throw new FileNotFoundException($"dump.cs not found: {normalizedPath}");
+
+        // Read a window of lines around the target line to find context
+        var contextSize = 100;
+        var startLine = Math.Max(0, lineNumber - contextSize);
+        var lines = File.ReadLines(normalizedPath).Skip(startLine).Take(contextSize * 2 + 1).ToArray();
+
+        var relativeLineIndex = Math.Min(lineNumber - startLine - 1, lines.Length - 1);
+        if (relativeLineIndex < 0 || relativeLineIndex >= lines.Length)
+            return $"Line {lineNumber} is out of range.";
+
+        var targetLine = lines[relativeLineIndex].Trim();
+
+        // Walk backwards to find the enclosing class and namespace
+        string? currentNamespace = null;
+        string? currentClass = null;
+        string? baseClass = null;
+        var memberContext = new List<string>();
+
+        // Regex patterns for Il2CppDumper output
+        var nsRegex = new Regex(@"^// Namespace:\s*(.*)$");
+        var classRegex = new Regex(@"^(?:public\s+|private\s+|protected\s+|internal\s+)?(?:abstract\s+|sealed\s+|static\s+)*(?:class|struct|enum|interface)\s+(\S+)(?:\s*:\s*(.+))?");
+        var methodRegex = new Regex(@"^\s*(?:public|private|protected|internal).*?\s+(\S+)\(.*\).*//\s*RVA:\s*(0x[\dA-Fa-f]+)");
+        var fieldRegex = new Regex(@"^\s*(?:public|private|protected|internal).*?\s+(\S+)\s+(\S+);\s*//\s*(0x[\dA-Fa-f]+)");
+
+        for (var i = relativeLineIndex; i >= 0; i--)
+        {
+            var line = lines[i].Trim();
+
+            if (currentClass == null)
+            {
+                var classMatch = classRegex.Match(line);
+                if (classMatch.Success)
+                {
+                    currentClass = classMatch.Groups[1].Value;
+                    baseClass = classMatch.Groups[2].Success ? classMatch.Groups[2].Value.Trim() : null;
+                }
+            }
+
+            if (currentNamespace == null)
+            {
+                var nsMatch = nsRegex.Match(line);
+                if (nsMatch.Success)
+                {
+                    currentNamespace = nsMatch.Groups[1].Value.Trim();
+                    if (string.IsNullOrEmpty(currentNamespace))
+                        currentNamespace = "(global)";
+                    break; // Found both namespace and class
+                }
+            }
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"--- dump.cs line {lineNumber} ---");
+        sb.AppendLine($"Content: {targetLine}");
+        sb.AppendLine();
+
+        var fullTypeName = !string.IsNullOrEmpty(currentNamespace) && currentNamespace != "(global)"
+            ? $"{currentNamespace}.{currentClass}"
+            : currentClass;
+
+        sb.AppendLine($"Namespace: {currentNamespace ?? "Unknown"}");
+        sb.AppendLine($"Type: {currentClass ?? "Unknown"}");
+        sb.AppendLine($"Full Type Name: {fullTypeName ?? "Unknown"}");
+        if (baseClass != null)
+            sb.AppendLine($"Base/Interfaces: {baseClass}");
+
+        // Parse the target line itself
+        var methodMatch = methodRegex.Match(targetLine);
+        if (methodMatch.Success)
+        {
+            sb.AppendLine($"Member Type: Method");
+            sb.AppendLine($"Method Name: {methodMatch.Groups[1].Value}");
+            sb.AppendLine($"RVA: {methodMatch.Groups[2].Value}");
+        }
+
+        var fieldMatch = fieldRegex.Match(targetLine);
+        if (fieldMatch.Success)
+        {
+            sb.AppendLine($"Member Type: Field");
+            sb.AppendLine($"Field Type: {fieldMatch.Groups[1].Value}");
+            sb.AppendLine($"Field Name: {fieldMatch.Groups[2].Value}");
+            sb.AppendLine($"Offset: {fieldMatch.Groups[3].Value}");
+        }
+
+        // If assemblyPath is provided, cross-reference with DummyDll
+        if (!string.IsNullOrWhiteSpace(assemblyPath) && !string.IsNullOrWhiteSpace(fullTypeName))
+        {
+            try
+            {
+                sb.AppendLine();
+                sb.AppendLine("--- DummyDll Cross-Reference ---");
+                var analysis = AnalyzeTypeAsync(assemblyPath, fullTypeName).GetAwaiter().GetResult();
+                sb.AppendLine(analysis);
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine($"Cross-reference failed: {ex.Message}");
+                sb.AppendLine("Tip: The type name in dump.cs may not match the DummyDll exactly. Try search_members instead.");
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(assemblyPath))
+        {
+            sb.AppendLine();
+            sb.AppendLine("Tip: Provide assemblyPath to cross-reference this type against the DummyDll for full analysis (fields, offsets, methods, RVAs).");
+        }
+
+        return sb.ToString();
+    });
+
+    // ── C-Struct Layout ───────────────────────────────────────────────────
+
+    public Task<string> GetTypeLayoutAsync(string assemblyPath, string typeFullName) => Task.Run(() =>
+    {
+        var module = GetOrLoad(assemblyPath).Module;
+        var type = FindType(module, typeFullName);
+
+        var sb = new StringBuilder();
+
+        var baseType = type.BaseType?.FullName;
+        var interfaces = type.Interfaces.Select(i => i.Interface.FullName).ToList();
+        var classSize = type.ClassLayout?.ClassSize > 0 ? "0x" + type.ClassLayout.ClassSize.ToString("X") : "Unknown";
+
+        sb.AppendLine($"// {type.FullName}{(baseType != null ? $" (Base: {baseType})" : "")}");
+        if (interfaces.Any())
+            sb.AppendLine($"// Implements: {string.Join(", ", interfaces)}");
+        sb.AppendLine($"// Size: {classSize}");
+        sb.AppendLine($"struct {SanitizeCName(type.Name)} {{");
+
+        // Add Il2Cpp object header fields
+        if (baseType == "System.Object" || baseType?.Contains("MonoBehaviour") == true || baseType?.Contains("ScriptableObject") == true)
+        {
+            sb.AppendLine("    void* klass;              // 0x00 (Il2Cpp internal)");
+            sb.AppendLine("    void* monitor;            // 0x08 (Il2Cpp internal)");
+        }
+
+        // Build sorted field list
+        var fields = new List<(uint Offset, string CType, string Name, string OriginalType, bool IsStatic)>();
+
+        foreach (var field in type.Fields)
+        {
+            var offsetStr = GetFieldOffset(field);
+            uint offset = 0;
+            if (offsetStr != null && offsetStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                uint.TryParse(offsetStr[2..], System.Globalization.NumberStyles.HexNumber, null, out offset);
+            else if (offsetStr != null)
+                uint.TryParse(offsetStr, out offset);
+            else if (field.FieldOffset.HasValue)
+                offset = field.FieldOffset.Value;
+
+            var cType = MapToCType(field.FieldType.FullName);
+            fields.Add((offset, cType, field.Name, field.FieldType.FullName, field.IsStatic));
+        }
+
+        // Instance fields sorted by offset
+        var instanceFields = fields.Where(f => !f.IsStatic).OrderBy(f => f.Offset).ToList();
+        var staticFields = fields.Where(f => f.IsStatic).ToList();
+
+        foreach (var field in instanceFields)
+        {
+            var padding = new string(' ', Math.Max(1, 22 - field.CType.Length));
+            sb.AppendLine($"    {field.CType}{padding}{SanitizeCName(field.Name)};{new string(' ', Math.Max(1, 20 - field.Name.Length))}// 0x{field.Offset:X2} ({field.OriginalType})");
+        }
+
+        if (staticFields.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("    // --- Static Fields (not in instance memory) ---");
+            foreach (var field in staticFields)
+            {
+                var cType = MapToCType(field.OriginalType);
+                sb.AppendLine($"    // static {cType} {SanitizeCName(field.Name)}; ({field.OriginalType})");
+            }
+        }
+
+        sb.AppendLine("};");
+
+        // Add method RVA list for Frida hooking
+        var methods = type.Methods.Where(m => !m.IsGetter && !m.IsSetter && !m.IsAddOn && !m.IsRemoveOn).ToList();
+        var methodsWithRva = methods.Where(m => GetMethodAddressRva(m) != null).ToList();
+
+        if (methodsWithRva.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("// --- Method RVAs (for Frida/native hooking) ---");
+            foreach (var method in methodsWithRva)
+            {
+                var rva = GetMethodAddressRva(method);
+                sb.AppendLine($"// {RenderMethodSignature(method)} → RVA: {rva}");
+            }
+        }
+
+        return sb.ToString();
+    });
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+
     public void Dispose()
     {
         foreach (var lazy in _cache.Values)
@@ -711,6 +1014,8 @@ internal sealed class AssemblyAnalyzer : IDisposable
         }
         _cache.Clear();
     }
+
+    // ── Private helpers ───────────────────────────────────────────────────
 
     private LoadedAssembly GetOrLoad(string assemblyPath)
     {
@@ -902,6 +1207,62 @@ internal sealed class AssemblyAnalyzer : IDisposable
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// Parse a hex string (with or without 0x prefix) into a numeric value for reliable comparison.
+    /// Returns null if the input is null, empty, or unparseable.
+    /// </summary>
+    private static ulong? TryParseHexValue(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex))
+            return null;
+
+        var clean = hex.Trim();
+        if (clean.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            clean = clean[2..];
+
+        return ulong.TryParse(clean, System.Globalization.NumberStyles.HexNumber, null, out var val) ? val : null;
+    }
+
+    /// <summary>
+    /// Map a .NET type name to an approximate C type for struct layout output.
+    /// </summary>
+    private static string MapToCType(string dotnetType)
+    {
+        return dotnetType switch
+        {
+            "System.Boolean" => "bool",
+            "System.Byte" => "uint8_t",
+            "System.SByte" => "int8_t",
+            "System.Int16" => "int16_t",
+            "System.UInt16" => "uint16_t",
+            "System.Int32" => "int32_t",
+            "System.UInt32" => "uint32_t",
+            "System.Int64" => "int64_t",
+            "System.UInt64" => "uint64_t",
+            "System.Single" => "float",
+            "System.Double" => "double",
+            "System.Char" => "uint16_t",
+            "System.IntPtr" => "intptr_t",
+            "System.UIntPtr" => "uintptr_t",
+            "System.String" => "String*",
+            "System.Object" => "Il2CppObject*",
+            "System.Void" => "void",
+            _ when dotnetType.EndsWith("[]") => $"Il2CppArray*",
+            _ when dotnetType.Contains("List`1") => "Il2CppList*",
+            _ when dotnetType.Contains("Dictionary`2") => "Il2CppDictionary*",
+            _ when !dotnetType.StartsWith("System.") => $"{SanitizeCName(dotnetType.Split('.').Last())}*",
+            _ => "void*"
+        };
+    }
+
+    /// <summary>
+    /// Sanitize a .NET type/field name for use as a C identifier.
+    /// </summary>
+    private static string SanitizeCName(string name)
+    {
+        return name.Replace('<', '_').Replace('>', '_').Replace('`', '_').Replace('.', '_').Replace('+', '_').Replace('/', '_');
     }
 
     private sealed record LoadedAssembly(string Path, ModuleDefMD Module, Lazy<CSharpDecompiler> Decompiler) : IDisposable

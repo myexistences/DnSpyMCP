@@ -122,7 +122,7 @@ internal sealed class McpServer(StdioJsonRpc rpc, ToolRegistry tools, ToolContex
             serverInfo = new
             {
                 name = "dnspy-mcp",
-                version = "2.1.0"
+                version = "2.2.0"
             }
         };
     }

@@ -1,4 +1,4 @@
-# AGENT.md — DnSpy MCP Server v2.1.0
+# AGENT.md — DnSpy MCP Server v2.2.0
 
 This document explains **every major aspect** of this MCP server so another agent (or human) can operate, extend, and troubleshoot it safely.
 
@@ -8,15 +8,16 @@ This document explains **every major aspect** of this MCP server so another agen
 
 `DnSpyMCP` is a local MCP (Model Context Protocol) server for .NET reverse engineering, game hacking, and network analysis.
 
-It provides 22 tools to:
+It provides 29 tools to:
 - inspect assemblies (`list_types`, `list_methods`, `search_members`, `analyze_type`)
 - decompile code (`decompile_type`, `decompile_method`)
 - inspect IL (`get_method_il`, `find_string_references`)
-- game dump analysis (`search_by_offset`, `get_method_rva`, `get_type_layout`, Il2Cpp dummy detection)
-- cross-references (`find_method_callers`, `find_field_references`, `find_derived_types`)
+- game dump analysis (`search_by_offset`, `get_method_rva`, `get_struct_layout`, `find_enum_values`, `find_ui_bindings`)
+- cross-references (`find_method_callers`, `find_field_references`, `trace_field_consumers`, `find_derived_types`, `search_by_inheritance`)
 - token resolution (`lookup_token`)
 - network reversing (`find_network_handlers`, `find_crypto_usage`, `scan_secrets`)
 - multi-assembly search (`search_workspace`)
+- class comparison & signatures (`diff_types`, `resolve_method_signature`)
 - dump.cs bridge (`resolve_dump_line`)
 - generate navigation instructions (`format_inspector_jump`)
 - patch binaries (`patch_replace_string_literal`, `patch_nop_instructions`)
@@ -94,7 +95,7 @@ Default assembly path auto-discovery:
 
 ---
 
-## 6) Tool reference (22 tools)
+## 6) Tool reference (29 tools)
 
 ### Assembly Inspection
 1. `list_types` — list types with optional `gameCodeOnly` filter
@@ -107,28 +108,35 @@ Default assembly path auto-discovery:
 
 ### Game Dump / Il2Cpp
 8. `analyze_type` — full class layout (fields + offsets + properties + methods + RVAs)
-9. `get_type_layout` — C-struct layout for cheat development
-10. `get_method_rva` — Il2Cpp RVA for a method
-11. `search_by_offset` — find field/method by hex or decimal offset (numeric comparison)
+9. `get_struct_layout` — advanced C++ struct export with explicit `_pad` bytes
+10. `get_type_layout` — basic C-struct layout 
+11. `get_method_rva` — Il2Cpp RVA for a method
+12. `search_by_offset` — find field/method by hex or decimal offset
+13. `find_enum_values` — find/resolve enum values by magic number
+14. `find_ui_bindings` — scan class for Unity UI refs & their modifiers
 
-### Cross-References
-12. `find_method_callers` — who calls a target method
-13. `find_field_references` — who reads/writes a target field
-14. `find_derived_types` — inheritance tree scan
-15. `lookup_token` — resolve raw hex token to Type/Method/Field/Property
+### Cross-References & Deep Reversing
+15. `trace_field_consumers` — full call graph from field access (who ultimately uses it)
+16. `find_method_callers` — who calls a target method
+17. `find_field_references` — who reads/writes a target field
+18. `find_derived_types` — inheritance tree scan
+19. `search_by_inheritance` — filtered inheritance search
+20. `lookup_token` — resolve raw hex token to Type/Method/Field/Property
+21. `diff_types` — compare field offsets/signatures between two classes
+22. `resolve_method_signature` — generate C++ typedef for hooking
 
 ### Network Reversing
-16. `find_network_handlers` — heuristic scan for TCP/Socket/Packet logic
-17. `find_crypto_usage` — heuristic scan for AES/RSA/encryption
-18. `scan_secrets` — extract hardcoded IPs, URLs, API keys
+23. `find_network_handlers` — heuristic scan for TCP/Socket/Packet logic
+24. `find_crypto_usage` — heuristic scan for AES/RSA/encryption
+25. `scan_secrets` — extract hardcoded IPs, URLs, API keys
 
 ### Multi-Assembly & Bridge
-19. `search_workspace` — search ALL .dll files in a directory
-20. `resolve_dump_line` — bridge dump.cs line numbers to DummyDll types
+26. `search_workspace` — search ALL .dll files in a directory
+27. `resolve_dump_line` — bridge dump.cs line numbers to DummyDll types
 
 ### Patching
-21. `patch_replace_string_literal` — replace string at IL offset (backup first)
-22. `patch_nop_instructions` — NOP instructions at IL offset (backup first)
+28. `patch_replace_string_literal` — replace string at IL offset (backup first)
+29. `patch_nop_instructions` — NOP instructions at IL offset (backup first)
 
 ### Navigation
 - `format_inspector_jump` — build navigation steps from tokens

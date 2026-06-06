@@ -2,7 +2,7 @@ using DotNetInspectorMcp.Domain;
 
 namespace DotNetInspectorMcp.Endpoints;
 
-internal static class AssemblyTools
+internal static partial class AssemblyTools
 {
     // ── Shared validation helper ──────────────────────────────────────────
     private static ToolCallResult? ValidateRequired(string? value, string paramName, string hint)

@@ -9,7 +9,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace DotNetInspectorMcp.Domain;
 
-internal sealed class AssemblyAnalyzer : IDisposable
+internal sealed partial class AssemblyAnalyzer : IDisposable
 {
     private readonly ConcurrentDictionary<string, Lazy<LoadedAssembly>> _cache = new(StringComparer.OrdinalIgnoreCase);
     private string? _defaultAssemblyPath;

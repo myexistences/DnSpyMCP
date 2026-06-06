@@ -8,11 +8,11 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=green)](https://github.com/myexistences/DnSpyMCP/commits)
 [![GitHub license](https://img.shields.io/github/license/myexistences/DnSpyMCP?style=for-the-badge&color=purple)](https://github.com/myexistences/DnSpyMCP/blob/main/LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
-[![Version](https://img.shields.io/badge/version-2.1.0-orange?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-orange?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/releases)
 
 **A powerful MCP server for .NET reverse engineering, game hacking, and Il2Cpp dump analysis.**
 
-*22 AI-optimized tools • Cross-References • Network Reversing • Il2Cpp Support • TCP Proxy Analysis • Multi-DLL Search*
+*29 AI-optimized tools • Cross-References • Network Reversing • Il2Cpp Support • TCP Proxy Analysis • Multi-DLL Search*
 
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=myexistences%2FDnSpyMCP&countColor=%23263759&style=for-the-badge)](https://visitorbadge.io/status?path=myexistences%2FDnSpyMCP)
 
@@ -22,7 +22,7 @@
 
 ## Features
 
-- **22 MCP Tools** for deep .NET assembly analysis, patching, and game reversing
+- **29 MCP Tools** for deep .NET assembly analysis, patching, and game reversing
 - Fully async, non-blocking architecture
 - Il2Cpp / Unity game dump optimized (offset search, RVA lookup, dummy detection)
 - Cross-reference scanning (method callers, field references)
@@ -53,7 +53,7 @@ src/DotNetInspectorMcp/
 └── Endpoints/ToolContext.cs            # DI context for tools
 ```
 
-## Tools (22 total)
+## Tools (29 total)
 
 ### Assembly Inspection
 | Tool | Description |
@@ -70,17 +70,24 @@ src/DotNetInspectorMcp/
 | Tool | Description |
 |------|-------------|
 | `analyze_type` | Full class layout: fields with offsets, properties, methods with RVAs. |
-| `get_type_layout` | C-struct-style memory layout, ready for cheat engine or Frida scripts. |
+| `get_type_layout` | Basic C-struct layout for cheat development. |
+| `get_struct_layout` | Advanced C++ struct export with explicit padding (`char _pad`) computed from offsets. |
 | `get_method_rva` | Get the Il2Cpp RVA for a specific method. |
 | `search_by_offset` | Search by hex (`0x16D0`) or decimal offset to find fields/methods. Numeric comparison. |
+| `find_enum_values` | Find/resolve enum values by magic number, hex value, or partial name. |
+| `find_ui_bindings` | Scan a class to find all Unity UI component references and the methods modifying them. |
 
 ### Deep Reverse Engineering
 | Tool | Description |
 |------|-------------|
 | `find_method_callers` | Cross-reference: find all methods that call a target method. |
 | `find_field_references` | Cross-reference: find all methods that read/write a target field. |
+| `trace_field_consumers` | Traces the full call graph up from a field read/write to find who ultimately consumes the data. |
 | `find_derived_types` | Find all classes inheriting from a base class or interface. |
+| `search_by_inheritance` | Find classes inheriting from a base type and optionally filter by field names. |
 | `lookup_token` | Resolve a raw hex token (e.g., `0x06001234`) to its Type/Method/Field. |
+| `diff_types` | Compare two types side-by-side to find field offset and signature differences. |
+| `resolve_method_signature` | Generates C++ function pointer typedefs for hooking (e.g., MinHook/Frida). |
 
 ### Network / TCP Proxy Reversing
 | Tool | Description |

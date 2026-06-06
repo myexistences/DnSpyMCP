@@ -410,4 +410,37 @@ internal sealed partial class AssemblyAnalyzer
 
         return sb.ToString();
     });
+
+    // ── 8. get_class_pointer ─────────────────────────────────────────────
+
+    public Task<string> GetClassPointerAsync(string scriptJsonPath, string typeFullName) => Task.Run(() =>
+    {
+        var normalizedPath = System.IO.Path.GetFullPath(scriptJsonPath);
+        if (!System.IO.File.Exists(normalizedPath))
+            throw new System.IO.FileNotFoundException($"script.json not found: {normalizedPath}");
+
+        using var fs = System.IO.File.OpenRead(normalizedPath);
+        using var doc = System.Text.Json.JsonDocument.Parse(fs);
+
+        if (!doc.RootElement.TryGetProperty("ScriptMetadata", out var metadataArray) || metadataArray.ValueKind != System.Text.Json.JsonValueKind.Array)
+            return "Error: Could not find 'ScriptMetadata' array in script.json. Is this a valid Il2CppDumper output?";
+
+        var targetName = typeFullName + "_TypeInfo";
+        
+        foreach (var item in metadataArray.EnumerateArray())
+        {
+            if (item.TryGetProperty("Name", out var nameProp) && nameProp.GetString() == targetName)
+            {
+                if (item.TryGetProperty("Address", out var addressProp))
+                {
+                    if (addressProp.TryGetUInt64(out var address))
+                    {
+                        return $"[TypeInfo Class Pointer] {typeFullName} -> Hex Offset: 0x{address:X} (Decimal: {address})";
+                    }
+                }
+            }
+        }
+
+        return $"Class pointer for '{typeFullName}' not found in script.json. Note: Only classes that are statically referenced by the game will have a TypeInfo pointer generated in global-metadata.";
+    });
 }

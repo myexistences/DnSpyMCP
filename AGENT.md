@@ -1,4 +1,4 @@
-# AGENT.md — DnSpy MCP Server v2.2.0
+# AGENT.md — DnSpy MCP Server v2.3.0
 
 This document explains **every major aspect** of this MCP server so another agent (or human) can operate, extend, and troubleshoot it safely.
 
@@ -8,11 +8,11 @@ This document explains **every major aspect** of this MCP server so another agen
 
 `DnSpyMCP` is a local MCP (Model Context Protocol) server for .NET reverse engineering, game hacking, and network analysis.
 
-It provides 29 tools to:
+It provides 30 tools to:
 - inspect assemblies (`list_types`, `list_methods`, `search_members`, `analyze_type`)
 - decompile code (`decompile_type`, `decompile_method`)
 - inspect IL (`get_method_il`, `find_string_references`)
-- game dump analysis (`search_by_offset`, `get_method_rva`, `get_struct_layout`, `find_enum_values`, `find_ui_bindings`)
+- game dump analysis (`search_by_offset`, `get_method_rva`, `get_struct_layout`, `find_enum_values`, `find_ui_bindings`, `get_class_pointer`)
 - cross-references (`find_method_callers`, `find_field_references`, `trace_field_consumers`, `find_derived_types`, `search_by_inheritance`)
 - token resolution (`lookup_token`)
 - network reversing (`find_network_handlers`, `find_crypto_usage`, `scan_secrets`)
@@ -95,7 +95,7 @@ Default assembly path auto-discovery:
 
 ---
 
-## 6) Tool reference (29 tools)
+## 6) Tool reference (30 tools)
 
 ### Assembly Inspection
 1. `list_types` — list types with optional `gameCodeOnly` filter
@@ -114,9 +114,10 @@ Default assembly path auto-discovery:
 12. `search_by_offset` — find field/method by hex or decimal offset
 13. `find_enum_values` — find/resolve enum values by magic number
 14. `find_ui_bindings` — scan class for Unity UI refs & their modifiers
+15. `get_class_pointer` — get static `TypeInfo` pointer from `script.json` for memory scanning
 
 ### Cross-References & Deep Reversing
-15. `trace_field_consumers` — full call graph from field access (who ultimately uses it)
+16. `trace_field_consumers` — full call graph from field access (who ultimately uses it)
 16. `find_method_callers` — who calls a target method
 17. `find_field_references` — who reads/writes a target field
 18. `find_derived_types` — inheritance tree scan

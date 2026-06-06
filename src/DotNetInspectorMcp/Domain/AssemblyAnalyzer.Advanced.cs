@@ -206,7 +206,7 @@ internal sealed partial class AssemblyAnalyzer
 
     // ── 4. find_ui_bindings ──────────────────────────────────────────────
 
-    public Task<string> FindUiBindingsAsync(string assemblyPath, string typeFullName) => Task.Run(() =>
+    public Task<string> FindUiBindingsAsync(string assemblyPath, string typeFullName, string[]? customUiTypes = null) => Task.Run(() =>
     {
         var module = GetOrLoad(assemblyPath).Module;
         var type = FindType(module, typeFullName);
@@ -216,7 +216,8 @@ internal sealed partial class AssemblyAnalyzer
 
         var uiFields = type.Fields.Where(f => 
             f.FieldType.FullName.Contains("UnityEngine.UI") || 
-            f.FieldType.FullName.Contains("TMPro")).ToList();
+            f.FieldType.FullName.Contains("TMPro") ||
+            (customUiTypes != null && customUiTypes.Any(c => f.FieldType.FullName.Contains(c, StringComparison.OrdinalIgnoreCase)))).ToList();
 
         if (uiFields.Count == 0)
         {

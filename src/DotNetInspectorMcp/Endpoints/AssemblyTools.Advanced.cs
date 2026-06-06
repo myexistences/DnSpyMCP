@@ -112,13 +112,15 @@ internal static partial class AssemblyTools
 
     // ── 4. find_ui_bindings ──────────────────────────────────────────────
 
-    [McpTool("find_ui_bindings", "Scan a class to find all Unity UI component references (Image, Text, TMPro) and list methods that modify them.")]
+    [McpTool("find_ui_bindings", "Scan a class to find all Unity UI component references (Image, Text, TMPro) and custom UI classes, listing methods that modify them.")]
     public static async Task<ToolCallResult> FindUiBindings(
         ToolContext ctx,
         [ToolParam("Path to the target .NET assembly.", Required = true)]
         string assemblyPath,
         [ToolParam("Type full name of the UI script (e.g., UIHudKillNotificationItem).", Required = true)]
-        string typeFullName)
+        string typeFullName,
+        [ToolParam("Optional array of custom UI class names to scan for (e.g., ['UITable', 'UIRelocateToLabelSprite']).")]
+        string[]? customUiTypes = null)
     {
         assemblyPath = ResolveAssemblyPath(ctx, assemblyPath);
         if (ValidateRequired(assemblyPath, "assemblyPath", AssemblyPathHint) is { } err1) return err1;
@@ -126,11 +128,12 @@ internal static partial class AssemblyTools
 
         try
         {
-            var text = await ctx.Analysis.FindUiBindingsAsync(assemblyPath, typeFullName);
+            var text = await ctx.Analysis.FindUiBindingsAsync(assemblyPath, typeFullName, customUiTypes);
             return new ToolCallResult(text, new
             {
                 assemblyPath,
                 typeFullName,
+                customUiTypes,
                 bindings = text
             });
         }

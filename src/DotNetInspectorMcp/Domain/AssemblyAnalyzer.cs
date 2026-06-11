@@ -943,7 +943,11 @@ internal sealed partial class AssemblyAnalyzer : IDisposable
         }
 
         // Build sorted field list
+<<<<<<< HEAD
         var fields = new List<(uint Offset, string CType, string Name, string OriginalType, bool IsStatic, bool IsValueType)>();
+=======
+        var fields = new List<(uint Offset, string CType, string Name, string OriginalType, bool IsStatic)>();
+>>>>>>> 9b7039f949a85947fd36460a2e67b8073fd13b11
 
         foreach (var field in type.Fields)
         {
@@ -956,9 +960,14 @@ internal sealed partial class AssemblyAnalyzer : IDisposable
             else if (field.FieldOffset.HasValue)
                 offset = field.FieldOffset.Value;
 
+<<<<<<< HEAD
             bool isValueType = field.FieldType.IsValueType;
             var cType = MapToCType(field.FieldType.FullName, isValueType);
             fields.Add((offset, cType, field.Name, field.FieldType.FullName, field.IsStatic, isValueType));
+=======
+            var cType = MapToCType(field.FieldType.FullName);
+            fields.Add((offset, cType, field.Name, field.FieldType.FullName, field.IsStatic));
+>>>>>>> 9b7039f949a85947fd36460a2e67b8073fd13b11
         }
 
         // Instance fields sorted by offset
@@ -968,8 +977,12 @@ internal sealed partial class AssemblyAnalyzer : IDisposable
         foreach (var field in instanceFields)
         {
             var padding = new string(' ', Math.Max(1, 22 - field.CType.Length));
+<<<<<<< HEAD
             var inlineNote = field.IsValueType && !field.OriginalType.StartsWith("System.") ? " [Inline Struct]" : "";
             sb.AppendLine($"    {field.CType}{padding}{SanitizeCName(field.Name)};{new string(' ', Math.Max(1, 20 - field.Name.Length))}// 0x{field.Offset:X2} ({field.OriginalType}){inlineNote}");
+=======
+            sb.AppendLine($"    {field.CType}{padding}{SanitizeCName(field.Name)};{new string(' ', Math.Max(1, 20 - field.Name.Length))}// 0x{field.Offset:X2} ({field.OriginalType})");
+>>>>>>> 9b7039f949a85947fd36460a2e67b8073fd13b11
         }
 
         if (staticFields.Count > 0)
@@ -978,7 +991,11 @@ internal sealed partial class AssemblyAnalyzer : IDisposable
             sb.AppendLine("    // --- Static Fields (not in instance memory) ---");
             foreach (var field in staticFields)
             {
+<<<<<<< HEAD
                 var cType = MapToCType(field.OriginalType, field.IsValueType);
+=======
+                var cType = MapToCType(field.OriginalType);
+>>>>>>> 9b7039f949a85947fd36460a2e67b8073fd13b11
                 sb.AppendLine($"    // static {cType} {SanitizeCName(field.Name)}; ({field.OriginalType})");
             }
         }
@@ -1230,7 +1247,11 @@ internal sealed partial class AssemblyAnalyzer : IDisposable
     /// <summary>
     /// Map a .NET type name to an approximate C type for struct layout output.
     /// </summary>
+<<<<<<< HEAD
     private static string MapToCType(string dotnetType, bool isValueType = false)
+=======
+    private static string MapToCType(string dotnetType)
+>>>>>>> 9b7039f949a85947fd36460a2e67b8073fd13b11
     {
         return dotnetType switch
         {
@@ -1254,7 +1275,11 @@ internal sealed partial class AssemblyAnalyzer : IDisposable
             _ when dotnetType.EndsWith("[]") => $"Il2CppArray*",
             _ when dotnetType.Contains("List`1") => "Il2CppList*",
             _ when dotnetType.Contains("Dictionary`2") => "Il2CppDictionary*",
+<<<<<<< HEAD
             _ when !dotnetType.StartsWith("System.") => isValueType ? SanitizeCName(dotnetType.Split('.').Last()) : $"{SanitizeCName(dotnetType.Split('.').Last())}*",
+=======
+            _ when !dotnetType.StartsWith("System.") => $"{SanitizeCName(dotnetType.Split('.').Last())}*",
+>>>>>>> 9b7039f949a85947fd36460a2e67b8073fd13b11
             _ => "void*"
         };
     }

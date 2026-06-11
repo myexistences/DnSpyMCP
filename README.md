@@ -70,7 +70,11 @@ src/DotNetInspectorMcp/
 | Tool | Description |
 |------|-------------|
 | `analyze_type` | Full class layout: fields with offsets, properties, methods with RVAs. |
+<<<<<<< HEAD
 | `get_type_layout` | Basic C-struct layout for cheat development. Automatically marks inline value types (`[Inline Struct]`) and omits pointer formatting. |
+=======
+| `get_type_layout` | Basic C-struct layout for cheat development. |
+>>>>>>> 9b7039f949a85947fd36460a2e67b8073fd13b11
 | `get_struct_layout` | Advanced C++ struct export with explicit padding (`char _pad`) computed from offsets. |
 | `get_method_rva` | Get the Il2Cpp RVA for a specific method. |
 | `search_by_offset` | Search by hex (`0x16D0`) or decimal offset to find fields/methods. Numeric comparison. |

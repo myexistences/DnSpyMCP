@@ -16,15 +16,6 @@
 
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=myexistences%2FDnSpyMCP&countColor=%23263759&style=for-the-badge)](https://visitorbadge.io/status?path=myexistences%2FDnSpyMCP)
 
-<br/>
-
-<a href="https://github.com/myexistences/DnSpyMCP/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=myexistences/DnSpyMCP" />
-</a>
-
-<br/>
-
-![GitHub Stats](https://github-readme-stats.vercel.app/api/pin/?username=myexistences&repo=DnSpyMCP&theme=default&show_owner=true)
 
 </div>
 

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "dotnet-inspector": {
+      "command": "dotnet",
+      "args": [
+        "<PATH_TO>/DnSpyMCP.dll"
+      ]
+    }
+  }
+}

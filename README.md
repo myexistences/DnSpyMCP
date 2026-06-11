@@ -6,7 +6,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=blue)](https://github.com/myexistences/DnSpyMCP/network/members)
 [![GitHub issues](https://img.shields.io/github/issues/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=red)](https://github.com/myexistences/DnSpyMCP/issues)
 [![GitHub last commit](https://img.shields.io/github/last-commit/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=green)](https://github.com/myexistences/DnSpyMCP/commits)
-[![GitHub license](https://img.shields.io/github/license/myexistences/DnSpyMCP?style=for-the-badge&color=purple)](https://github.com/myexistences/DnSpyMCP/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/badge/license-MIT-purple?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/blob/main/LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
 [![Version](https://img.shields.io/badge/version-2.4.1-orange?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/releases)
 
@@ -15,6 +15,16 @@
 *31 AI-optimized tools • Cross-References • Network Reversing • Il2Cpp Support • TCP Proxy Analysis • Multi-DLL Search*
 
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=myexistences%2FDnSpyMCP&countColor=%23263759&style=for-the-badge)](https://visitorbadge.io/status?path=myexistences%2FDnSpyMCP)
+
+<br/>
+
+<a href="https://github.com/myexistences/DnSpyMCP/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=myexistences/DnSpyMCP" />
+</a>
+
+<br/>
+
+![GitHub Stats](https://github-readme-stats.vercel.app/api/pin/?username=myexistences&repo=DnSpyMCP&theme=default&show_owner=true)
 
 </div>
 

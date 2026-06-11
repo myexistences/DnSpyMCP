@@ -8,11 +8,11 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/myexistences/DnSpyMCP?style=for-the-badge&logo=github&color=green)](https://github.com/myexistences/DnSpyMCP/commits)
 [![GitHub license](https://img.shields.io/github/license/myexistences/DnSpyMCP?style=for-the-badge&color=purple)](https://github.com/myexistences/DnSpyMCP/blob/main/LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
-[![Version](https://img.shields.io/badge/version-2.3.0-orange?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/releases)
+[![Version](https://img.shields.io/badge/version-2.4.1-orange?style=for-the-badge)](https://github.com/myexistences/DnSpyMCP/releases)
 
 **A powerful MCP server for .NET reverse engineering, game hacking, and Il2Cpp dump analysis.**
 
-*30 AI-optimized tools • Cross-References • Network Reversing • Il2Cpp Support • TCP Proxy Analysis • Multi-DLL Search*
+*31 AI-optimized tools • Cross-References • Network Reversing • Il2Cpp Support • TCP Proxy Analysis • Multi-DLL Search*
 
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=myexistences%2FDnSpyMCP&countColor=%23263759&style=for-the-badge)](https://visitorbadge.io/status?path=myexistences%2FDnSpyMCP)
 
@@ -22,7 +22,7 @@
 
 ## Features
 
-- **30 MCP Tools** for deep .NET assembly analysis, patching, and game reversing
+- **31 MCP Tools** for deep .NET assembly analysis, patching, and game reversing
 - Fully async, non-blocking architecture
 - Il2Cpp / Unity game dump optimized (offset search, RVA lookup, dummy detection)
 - Cross-reference scanning (method callers, field references)
@@ -53,7 +53,7 @@ src/DotNetInspectorMcp/
 └── Endpoints/ToolContext.cs            # DI context for tools
 ```
 
-## Tools (30 total)
+## Tools (31 total)
 
 ### Assembly Inspection
 | Tool | Description |

@@ -265,3 +265,12 @@ copy configs\instructions.md %USERPROFILE%\.gemini\antigravity-ide\mcp\dnspy\ins
 1. resolve_dump_line → resolve a dump.cs line to a type/member
 2. analyze_type → get the full analysis from DummyDll
 ```
+## Star History
+
+<a href="https://star-history.com/#myexistences/DnSpyMCP&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=Date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=Date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=Date&legend=top-left" />
+ </picture>
+</a>

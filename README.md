@@ -267,10 +267,10 @@ copy configs\instructions.md %USERPROFILE%\.gemini\antigravity-ide\mcp\dnspy\ins
 ```
 ## Star History
 
-<a href="https://star-history.com/#myexistences/DnSpyMCP&Date">
+<a href="https://www.star-history.com/?type=date&repos=myexistences%2FDnSpyMCP">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&legend=top-left" />
  </picture>
 </a>

@@ -265,12 +265,13 @@ copy configs\instructions.md %USERPROFILE%\.gemini\antigravity-ide\mcp\dnspy\ins
 1. resolve_dump_line → resolve a dump.cs line to a type/member
 2. analyze_type → get the full analysis from DummyDll
 ```
+
 ## Star History
 
-<a href="https://www.star-history.com/?repos=myexistences%2FDnSpyMCP&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=myexistences%2FDnSpyMCP&type=date&legend=bottom-right">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&theme=dark&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=myexistences/DnSpyMCP&type=date&legend=bottom-right" />
  </picture>
 </a>
